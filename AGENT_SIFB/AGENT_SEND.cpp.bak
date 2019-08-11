@@ -1,0 +1,78 @@
+/*************************************************************************
+ *** FORTE Library Element
+ ***
+ *** This file was generated using the 4DIAC FORTE Export Filter V1.0.x!
+ ***
+ *** Name: AGENT_SEND
+ *** Description: Sends diagnostic data to the remote agent
+ *** Version: 
+ ***     1.0: 2019-01-09/badger - null - 
+ *************************************************************************/
+
+#include "AGENT_SEND.h"
+#ifdef FORTE_ENABLE_GENERATED_SOURCE_CPP
+#include "AGENT_SEND_gen.cpp"
+#endif
+
+#include "AGENT_SEND_Library.cpp"
+
+DEFINE_FIRMWARE_FB(FORTE_AGENT_SEND, g_nStringIdAGENT_SEND)
+
+const CStringDictionary::TStringId FORTE_AGENT_SEND::scm_anDataInputNames[] = {g_nStringIdADDRESS, g_nStringIdPORT, g_nStringIdDATA_TYPE, g_nStringIdDATA_INT, g_nStringIdDATA_LINT, g_nStringIdDATA_REAL, g_nStringIdDATA_LREAL, g_nStringIdDATA_STRING, g_nStringIdDATA_WSTRING, g_nStringIdDATA_BOOL};
+
+const CStringDictionary::TStringId FORTE_AGENT_SEND::scm_anDataInputTypeIds[] = {g_nStringIdSTRING, g_nStringIdLINT, g_nStringIdINT, g_nStringIdINT, g_nStringIdLINT, g_nStringIdREAL, g_nStringIdLREAL, g_nStringIdSTRING, g_nStringIdWSTRING, g_nStringIdBOOL};
+
+const TForteInt16 FORTE_AGENT_SEND::scm_anEIWithIndexes[] = {0, 4};
+const TDataIOID FORTE_AGENT_SEND::scm_anEIWith[] = {0, 1, 2, 255, 3, 4, 6, 7, 9, 5, 8, 255};
+const CStringDictionary::TStringId FORTE_AGENT_SEND::scm_anEventInputNames[] = {g_nStringIdINIT, g_nStringIdREQ};
+
+const TForteInt16 FORTE_AGENT_SEND::scm_anEOWithIndexes[] = {-1, -1};
+const CStringDictionary::TStringId FORTE_AGENT_SEND::scm_anEventOutputNames[] = {g_nStringIdINITO};
+
+const SFBInterfaceSpec FORTE_AGENT_SEND::scm_stFBInterfaceSpec = {
+  2,  scm_anEventInputNames,  scm_anEIWith,  scm_anEIWithIndexes,
+  1,  scm_anEventOutputNames,  0, 0,  10,  scm_anDataInputNames, scm_anDataInputTypeIds,
+  0,  0, 0,
+  0, 0
+};
+
+
+void FORTE_AGENT_SEND::executeEvent(int pa_nEIID){
+  switch(pa_nEIID){
+    case scm_nEventINITID:
+    	if (!isInitialised) {
+    		// Connect to the remote diagnostic server.
+    		port = PORT();
+    		char serverAddress[32] = {0};
+    		ADDRESS().toString(serverAddress, 32);
+    		// FORTE strings have leading and terminating single-quote characters in them
+			// so remove them from the IP address.
+			for(int ptr = 1; ptr <= 32; ptr++) {
+				serverAddress[ptr - 1] = serverAddress[ptr];
+				if ((ptr > 1 ) && (serverAddress[ptr] == '\'')) {
+					serverAddress[ptr - 1] = '\0';
+					break;
+				}
+			}
+			if (createServerConnection(serverAddress, port)) {
+				isInitialised = true;
+				sendOutputEvent(scm_nEventINITOID);
+			} else {
+				cout << "AGENT_SEND cannot connect to the diagnostic server at " << serverAddress << " via port " << port
+				     << ". " << getLastErrorMessage() << "\n"; 
+			}	
+    	}
+ 		break;
+		
+    case scm_nEventREQID:
+    	string diagnosticData = to_string(DATA_REAL()) + "\n";
+    	cout << "AGENT SEND input DATA_REAL = " << diagnosticData << "\n";
+    	if (isInitialised) {
+    		sendPacket(diagnosticData);
+    	}
+      break;
+  }
+}
+
+
+
